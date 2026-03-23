@@ -1,0 +1,88 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import { siteConfig } from "../data/site";
+import { formatPostDate, getReadingTime } from "../lib/blog";
+
+interface Props {
+  title: string;
+  description: string;
+  publishedAt: Date;
+  updatedAt?: Date;
+  tags?: string[];
+  body: string;
+  newerPost?: { title: string; href: string };
+  olderPost?: { title: string; href: string };
+}
+
+const { title, description, publishedAt, updatedAt, tags = [], body, newerPost, olderPost } = Astro.props;
+---
+
+<BaseLayout title={`${title} | ${siteConfig.name}`} description={description}>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/">{siteConfig.name}</a>
+      <nav class="topbar-actions" aria-label="Primary">
+        <a class="nav-link" href="/#posts">Posts</a>
+        <a class="nav-link" href="/about/">About</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme">
+          Theme
+        </button>
+      </nav>
+    </header>
+
+    <main class="post-page">
+      <article class="post-entry">
+        <header class="post-header">
+          <p class="eyebrow">Entry</p>
+          <h1>{title}</h1>
+          <div class="post-meta">
+            <span>{formatPostDate(publishedAt)}</span>
+            <span aria-hidden="true">•</span>
+            <span>{getReadingTime(body)}</span>
+            {updatedAt && (
+              <>
+                <span aria-hidden="true">•</span>
+                <span>Updated {formatPostDate(updatedAt)}</span>
+              </>
+            )}
+          </div>
+          <p class="lede">{description}</p>
+        </header>
+        <div class="prose">
+          <slot />
+        </div>
+        {(tags.length > 0 || newerPost || olderPost) && (
+          <footer class="post-footer">
+            {tags.length > 0 && (
+              <section class="post-footer-block" aria-labelledby="post-tags-heading">
+                <h2 id="post-tags-heading" class="footer-label">Tags</h2>
+                <ul class="tag-list footer-tags" aria-label="Tags">
+                  {tags.map((tag) => <li>#{tag}</li>)}
+                </ul>
+              </section>
+            )}
+
+            {(olderPost || newerPost) && (
+              <nav class="post-footer-nav" aria-label="Post navigation">
+                {newerPost ? (
+                  <a class="post-nav-link" href={newerPost.href}>
+                    <span class="footer-label">Newer post</span>
+                    <strong>{newerPost.title}</strong>
+                  </a>
+                ) : (
+                  <span></span>
+                )}
+                {olderPost && (
+                  <a class="post-nav-link post-nav-link-next" href={olderPost.href}>
+                    <span class="footer-label">Older post</span>
+                    <strong>{olderPost.title}</strong>
+                  </a>
+                )}
+              </nav>
+            )}
+          </footer>
+        )}
+      </article>
+    </main>
+  </div>
+</BaseLayout>

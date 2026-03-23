@@ -1,0 +1,31 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../data/site";
+---
+
+<BaseLayout title={`Not found | ${siteConfig.name}`} description="This page does not exist.">
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/">{siteConfig.name}</a>
+      <nav class="topbar-actions" aria-label="Primary">
+        <a class="nav-link" href="/">Posts</a>
+        <a class="nav-link" href="/about/">About</a>
+      </nav>
+    </header>
+
+    <main class="post-page">
+      <article class="post-entry">
+        <header class="post-header">
+          <p class="eyebrow">404</p>
+          <h1>Page not found</h1>
+          <p class="lede">The page you requested is missing or no longer published.</p>
+        </header>
+        <div class="prose">
+          <p>
+            Head back to the <a href="/">post stream</a> to keep reading.
+          </p>
+        </div>
+      </article>
+    </main>
+  </div>
+</BaseLayout>

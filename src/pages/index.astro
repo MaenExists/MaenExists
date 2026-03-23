@@ -1,0 +1,77 @@
+---
+import { getCollection, getEntry, render } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../data/site";
+import { formatPostDate, getPostSlug, getReadingTime, isPublishedPost, sortPosts } from "../lib/blog";
+
+const entries = sortPosts(await getCollection("blog", isPublishedPost));
+const homeEntry = await getEntry("site", "home");
+
+if (!homeEntry) {
+  throw new Error("Missing site content: contents/site/home.md");
+}
+
+const { Content: HomeContent } = await render(homeEntry);
+---
+
+<BaseLayout title={siteConfig.name} description={homeEntry.data.description}>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/">{siteConfig.name}</a>
+      <nav class="topbar-actions" aria-label="Primary">
+        <a class="nav-link" href="#posts">Posts</a>
+        <a class="nav-link" href="/about/">About</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme">
+          Theme
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="home-intro" aria-labelledby="home-intro-title">
+        <h1 id="home-intro-title">{homeEntry.data.title}</h1>
+        {homeEntry.data.tagline && <p class="intro-copy">{homeEntry.data.tagline}</p>}
+        <div class="intro-support">
+          <HomeContent />
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="stream" id="posts" aria-labelledby="posts-heading">
+        <div class="section-heading">
+          <p class="eyebrow">Posts</p>
+          <h2 id="posts-heading">Latest writing</h2>
+        </div>
+
+        {
+          entries.length > 0 ? (
+            <ul class="post-list">
+              {entries.map((entry) => (
+                <li class="post-item">
+                  <a class="post-link" href={`/posts/${getPostSlug(entry)}/`}>
+                    <div class="post-row">
+                      <div class="post-copy">
+                        <h3>{entry.data.title}</h3>
+                        <p class="post-summary">{entry.data.description}</p>
+                        <p class="post-metadata">
+                          <time datetime={entry.data.publishedAt.toISOString()}>
+                            {formatPostDate(entry.data.publishedAt)}
+                          </time>
+                          <span aria-hidden="true">•</span>
+                          <span>{getReadingTime(entry.body)}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="empty-state">No published posts yet.</p>
+          )
+        }
+      </section>
+    </main>
+  </div>
+</BaseLayout>

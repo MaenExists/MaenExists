@@ -1,0 +1,23 @@
+{
+  "name": "maenexists",
+  "version": "1.0.0",
+  "description": "MaenExists: a personal blog built with Astro, Markdown, Cloudflare Pages, and plain CSS.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "new:post": "node ./scripts/new-post.mjs"
+  },
+  "keywords": [
+    "astro",
+    "blog",
+    "cloudflare-pages"
+  ],
+  "author": "MaenExists",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "astro": "^6.0.8"
+  }
+}

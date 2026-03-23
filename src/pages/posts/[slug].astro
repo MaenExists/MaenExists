@@ -1,0 +1,48 @@
+---
+import { getCollection, render } from "astro:content";
+import PostLayout from "../../layouts/PostLayout.astro";
+import { getPostSlug, isPublishedPost, sortPosts } from "../../lib/blog";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("blog", isPublishedPost);
+
+  return entries.map((entry) => ({
+    params: { slug: getPostSlug(entry) },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const entries = sortPosts(await getCollection("blog", isPublishedPost));
+const currentIndex = entries.findIndex((item) => item.id === entry.id);
+const newerPost = currentIndex > 0 ? entries[currentIndex - 1] : undefined;
+const olderPost = currentIndex >= 0 && currentIndex < entries.length - 1 ? entries[currentIndex + 1] : undefined;
+---
+
+<PostLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  publishedAt={entry.data.publishedAt}
+  updatedAt={entry.data.updatedAt}
+  tags={entry.data.tags}
+  body={entry.body}
+  newerPost={
+    newerPost
+      ? {
+          title: newerPost.data.title,
+          href: `/posts/${getPostSlug(newerPost)}/`,
+        }
+      : undefined
+  }
+  olderPost={
+    olderPost
+      ? {
+          title: olderPost.data.title,
+          href: `/posts/${getPostSlug(olderPost)}/`,
+        }
+      : undefined
+  }
+>
+  <Content />
+</PostLayout>

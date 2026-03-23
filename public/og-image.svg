@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="MaenExists Open Graph image">
+  <rect width="1200" height="630" fill="#0b0f14" />
+  <rect x="120" y="132" width="960" height="1" fill="#00802B" />
+  <rect x="120" y="498" width="960" height="1" fill="#2a313a" />
+  <text x="120" y="220" fill="#f1f5f9" font-size="72" font-family="Inter, Arial, sans-serif" font-weight="700">MaenExists</text>
+  <text x="120" y="290" fill="#c2cbd4" font-size="32" font-family="Inter, Arial, sans-serif">
+    Writing about web systems, interface restraint,
+  </text>
+  <text x="120" y="334" fill="#c2cbd4" font-size="32" font-family="Inter, Arial, sans-serif">
+    and tools worth keeping.
+  </text>
+  <text x="120" y="438" fill="#00802B" font-size="24" font-family="JetBrains Mono, monospace">maen.pages.dev</text>
+</svg>

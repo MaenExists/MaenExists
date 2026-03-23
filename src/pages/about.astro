@@ -1,0 +1,41 @@
+---
+import { getEntry, render } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../data/site";
+
+const aboutEntry = await getEntry("site", "about");
+
+if (!aboutEntry) {
+  throw new Error("Missing site content: contents/site/about.md");
+}
+
+const { Content } = await render(aboutEntry);
+---
+
+<BaseLayout title={`About | ${siteConfig.name}`} description={aboutEntry.data.description}>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="/">{siteConfig.name}</a>
+      <nav class="topbar-actions" aria-label="Primary">
+        <a class="nav-link" href="/">Posts</a>
+        <a class="nav-link" href="/about/">About</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme">
+          Theme
+        </button>
+      </nav>
+    </header>
+
+    <main class="post-page">
+      <section class="about-page">
+        <header class="about-header">
+          <p class="eyebrow">About</p>
+          <h1>{aboutEntry.data.title}</h1>
+          <p class="lede">{aboutEntry.data.description}</p>
+        </header>
+        <div class="prose about-prose">
+          <Content />
+        </div>
+      </section>
+    </main>
+  </div>
+</BaseLayout>
