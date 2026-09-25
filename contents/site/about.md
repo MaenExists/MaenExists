@@ -15,6 +15,6 @@ This space is where I share my thoughts, the wins, the failures, and everything 
 
 ## Why this exists
 
-School hasn't been my strong suit, but I know my stuff when it comes to building. This is my space to document my growth from broke tinkerer to someone who can actually ship real tech that advances humanity. I will try not to write stuff with AI , anyway , ideas and thoughts will be mine . 
+This is my space to document my growth from broke tinkerer to someone who can actually ship real tech that advances humanity. I will try not to write stuff with AI , ideas and thoughts will be mine . 
 
 Stay tuned for the grind, the breakthroughs, and everything in between.
