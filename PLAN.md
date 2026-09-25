@@ -4,13 +4,13 @@
 - [x] Initial Astro project setup
 - [x] Content collection configuration for blog and site content
 - [x] Basic design implementation (minimalist, dark mode)
-- [x] Deployment setup on Cloudflare Pages
-- [x] Customized About page for Maen (Refined bio)
+- [x] Deployment setup on Cloudflare Pages (active on maenexists.pages.dev)
+- [x] Refined bio and home page copy
 - [x] Removed placeholder blog posts and initial draft post
 
 ## In Progress
+- [ ] Stabilize CI pipeline (GitHub Actions lockfile resolution) and domain alignment
 - [ ] Initializing agent-driven development (PI)
-- [ ] Stabilizing the codebase for Maen's personal use
 
 ## Future Tasks
 - [ ] Write first set of technical blog posts
