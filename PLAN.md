@@ -7,10 +7,10 @@
 - [x] Deployment setup on Cloudflare Pages (active on maenexists.pages.dev)
 - [x] Refined bio and home page copy
 - [x] Removed placeholder blog posts and initial draft post
+- [x] Obsidian friction-free writing workflow and blog template integration
 
 ## In Progress
 - [ ] Stabilize CI pipeline (GitHub Actions lockfile resolution) and domain alignment
-- [ ] Initializing agent-driven development (PI)
 
 ## Future Tasks
 - [ ] Write first set of technical blog posts
