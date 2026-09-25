@@ -1,6 +1,6 @@
 ---
 title: About Me
-description: sCogito, ergo sum
+description: "Cogito, ergo sum"
 ---
 
 Hi, I'm Maen . I'm a high school student with a minimal resources (mostly from dumpster diving), who likes to be called an engineer . I love building stuff, tinkering with AI, and creating things that actually matters to me and whole world.
