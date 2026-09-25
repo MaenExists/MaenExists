@@ -1,20 +1,9 @@
 ---
-title: About Maen
-description: I am just a guy who is building stuff !!
+title: About Me
+description: sCogito, ergo sum
 ---
 
-Hi, I'm Maen . I'm a high school student with a kinda broke computer but big dreams. I love building stuff, tinkering with AI, and creating things that actually matter.
+Hi, I'm Maen . I'm a high school student with a minimal resources (mostly from dumpster diving), who likes to be called an engineer . I love building stuff, tinkering with AI, and creating things that actually matters to me and whole world.
 
-This space is where I share my thoughts, the wins, the failures, and everything in between. Expect build mistakes, technical errors, and honest reflections on what it's like to learn and create as an alone tinkerer.
+This space is where I share my thoughts, the wins, the failures, and everything in between. Expect mistakes, technical errors, and honest reflections on what it's like to learn and create as an alone self-taught builder.
 
-## What you'll find here
-
-- **Tinkerer stuff**: Things I learn while tinkering with AI, web dev, and low-spec optimization
-- **Honest reflections**: The good, the bad, and the ugly of self-taught building
-- **Open source projects**: Code I'm sharing with the world
-
-## Why this exists
-
-This is my space to document my growth from broke tinkerer to someone who can actually ship real tech that advances humanity. I will try not to write stuff with AI , ideas and thoughts will be mine . 
-
-Stay tuned for the grind, the breakthroughs, and everything in between.

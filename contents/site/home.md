@@ -1,7 +1,7 @@
 ---
 title: MaenExists
-tagline: Thoughts on building and experimenting shit
-description: A personal knowledge stream rendered as a minimal system interface.
+tagline: Thoughts on building and experimenting 
+description: A personal journal rendered as git log --oneline for a life spent debugging realityy
 ---
 
-Hi 👋 I am @Maen . From Agentic systems to anything that interests me ! Just to change the world - little by little . 
+Hi 👋 I am @Maen . From AI systems to anything that interests me ! 
