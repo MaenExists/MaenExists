@@ -1,0 +1,1441 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../data/site";
+---
+
+<BaseLayout title={`Write Studio | ${siteConfig.name}`} description="Private writing studio for Maen">
+  <!-- Secret Writing Studio Container -->
+  <div class="studio-wrapper">
+    <!-- AUTH GATE MODAL / CARD -->
+    <div id="auth-gate" class="auth-container">
+      <div class="auth-card">
+        <header class="auth-header">
+          <p class="eyebrow">Restricted Access</p>
+          <h2>Write Studio</h2>
+          <p class="auth-sub">Enter credentials to manage posts and site contents.</p>
+        </header>
+
+        <form id="login-form" class="auth-form" autocomplete="on">
+          <div id="auth-error" class="auth-alert" style="display: none;" role="alert"></div>
+
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input
+              id="login-username"
+              type="text"
+              name="username"
+              required
+              autocomplete="username"
+              placeholder="e.g. maen"
+              class="auth-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="password-wrap">
+              <input
+                id="login-password"
+                type="password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Secret password"
+                class="auth-input"
+              />
+              <button type="button" id="toggle-password" class="pwd-toggle" aria-label="Toggle password visibility">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <button id="login-btn" type="submit" class="auth-submit-btn">
+            Sign In to Studio
+          </button>
+        </form>
+
+        <footer class="auth-footer">
+          <span>Protected with constant-time cryptographic verification & IP brute-force lockdown.</span>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MAIN STUDIO INTERFACE (Hidden until authenticated) -->
+    <div id="studio-main" class="studio-app" style="display: none;">
+      <!-- TOP NAVIGATION BAR -->
+      <header class="topbar studio-topbar">
+        <div class="studio-brand-group">
+          <a class="brand" href="/">{siteConfig.name}</a>
+          <span class="studio-badge">/write</span>
+        </div>
+
+        <!-- Selector for Blog Posts & Site Content -->
+        <div class="studio-selector-wrap">
+          <label for="content-picker" class="visually-hidden">Select Content</label>
+          <select id="content-picker" class="studio-select" aria-label="Select post or page to edit">
+            <option value="new">+ New Blog Post</option>
+            <optgroup label="Blog Posts" id="blog-options-group"></optgroup>
+            <optgroup label="Site Pages">
+              <option value="site:about">About Page (contents/site/about.md)</option>
+              <option value="site:home">Home Page (contents/site/home.md)</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <nav class="topbar-actions studio-actions" aria-label="Studio Actions">
+          <!-- View switcher -->
+          <div class="studio-view-toggle" role="group" aria-label="Editor View">
+            <button type="button" class="view-btn" data-view="edit" title="Markdown Editor Only">Edit</button>
+            <button type="button" class="view-btn active" data-view="split" title="Side-by-side Editor & Preview">Split</button>
+            <button type="button" class="view-btn" data-view="preview" title="Full Blog Preview">Preview</button>
+          </div>
+
+          <!-- Status indicator -->
+          <div id="save-status" class="status-indicator" title="Save status">
+            <span class="status-dot"></span>
+            <span id="status-text">Ready</span>
+          </div>
+
+          <!-- Publish / Save Action -->
+          <button id="save-btn" type="button" class="save-btn" title="Publish or save changes (Ctrl+S / Cmd+S)">
+            <span id="save-btn-text">Publish</span>
+          </button>
+
+          <!-- Theme toggle -->
+          <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme">
+            Theme
+          </button>
+
+          <!-- Logout -->
+          <button id="logout-btn" type="button" class="logout-btn" title="Log out from studio">
+            Logout
+          </button>
+        </nav>
+      </header>
+
+      <!-- WRITING CANVAS (Matches blog post layout 1:1) -->
+      <div class="shell studio-canvas-shell">
+        <main class="post-page studio-post-page">
+          <article class="post-entry studio-post-entry">
+            <!-- POST HEADER -->
+            <header class="post-header studio-post-header">
+              <p class="eyebrow" id="eyebrow-text">ENTRY</p>
+
+              <!-- Inline Editable Title (styled identically to .post-header h1) -->
+              <input
+                id="content-title"
+                class="studio-title-input"
+                placeholder="Title of your post..."
+                aria-label="Post title"
+              />
+
+              <!-- METADATA ROW -->
+              <div class="post-meta studio-meta-row" id="meta-row">
+                <!-- Date Pill: Strictly locks original date for existing posts -->
+                <span id="date-display" class="date-badge" title="Publication date">
+                  📅 <strong id="date-value">2026-10-20</strong>
+                  <span id="date-lock-icon" class="lock-indicator" style="display: none;" title="Date wrote on is permanent and cannot be modified">🔒 Locked</span>
+                </span>
+
+                <span aria-hidden="true">•</span>
+                <span id="reading-time-pill">1 min read</span>
+
+                <span aria-hidden="true">•</span>
+                <!-- Draft Toggle -->
+                <label class="draft-checkbox-label" title="Draft status">
+                  <input type="checkbox" id="is-draft" />
+                  <span class="draft-switch"></span>
+                  <span id="draft-status-text">Draft</span>
+                </label>
+              </div>
+
+              <!-- SLUG INPUT (For blog posts) -->
+              <div class="slug-row" id="slug-row">
+                <span class="slug-prefix">Slug: /posts/</span>
+                <input id="content-slug" class="slug-input" placeholder="post-slug" aria-label="Post slug" />
+                <span class="slug-suffix">/</span>
+              </div>
+
+              <!-- TAGLINE INPUT (Only for home page) -->
+              <div class="studio-custom-field" id="tagline-field" style="display: none;">
+                <label for="content-tagline" class="footer-label">Tagline</label>
+                <input id="content-tagline" class="studio-input" placeholder="A catchy tagline..." />
+              </div>
+
+              <!-- DESCRIPTION / LEDE (styled identically to .lede) -->
+              <textarea
+                id="content-description"
+                class="studio-lede-input"
+                placeholder="A brief one-line summary / description..."
+                rows="1"
+                aria-label="Post description"
+              ></textarea>
+
+              <!-- TAGS ROW (For blog posts) -->
+              <div class="tags-editor-row" id="tags-row">
+                <span class="footer-label">Tags:</span>
+                <div id="tags-chips" class="tags-chips"></div>
+                <input
+                  id="tag-input"
+                  class="tag-pill-input"
+                  placeholder="+ tag (press Enter)"
+                  aria-label="Add tag"
+                />
+              </div>
+            </header>
+
+            <!-- EDITING & PREVIEW SPLIT BODY -->
+            <div class="studio-body-layout view-split" id="studio-body-container">
+              <!-- EDITOR PANE -->
+              <div class="editor-pane" id="editor-pane">
+                <!-- Format Helper Toolbar -->
+                <div class="markdown-toolbar" role="toolbar" aria-label="Markdown formatting tools">
+                  <button type="button" data-insert="## " title="Add H2 Heading">H2</button>
+                  <button type="button" data-insert="### " title="Add H3 Heading">H3</button>
+                  <button type="button" data-wrap="**" title="Bold"><strong>B</strong></button>
+                  <button type="button" data-wrap="*" title="Italic"><em>I</em></button>
+                  <button type="button" data-wrap="`" title="Inline Code">`code`</button>
+                  <button type="button" data-insert="```\n\n```" title="Code Block">```</button>
+                  <button type="button" data-insert="> " title="Blockquote">&gt;</button>
+                  <button type="button" data-insert="- " title="Bullet List">• list</button>
+                  <button type="button" data-insert="[title](url)" title="Link">link</button>
+                  <button type="button" data-insert="---\n" title="Horizontal Rule">---</button>
+                </div>
+
+                <!-- Markdown Textarea -->
+                <textarea
+                  id="content-body"
+                  class="studio-markdown-editor"
+                  placeholder="Write your markdown here..."
+                  aria-label="Post markdown body"
+                ></textarea>
+              </div>
+
+              <!-- LIVE BLOG PREVIEW PANE (Styled EXACTLY as .prose) -->
+              <div class="preview-pane" id="preview-pane">
+                <div class="preview-banner">
+                  <span class="preview-badge">Live Blog View</span>
+                </div>
+                <div class="prose studio-live-prose" id="live-prose"></div>
+              </div>
+            </div>
+          </article>
+        </main>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  /* ----------------------------------------------------
+     STUDIO WRAPPER & AUTHENTICATION
+  ---------------------------------------------------- */
+  .studio-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    padding: 1.5rem;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 26rem;
+    padding: 2.2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .auth-header h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.7rem;
+    color: var(--text);
+    letter-spacing: -0.04em;
+  }
+
+  .auth-sub {
+    margin: 0 0 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .auth-alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    font-size: 0.85rem;
+    border-radius: 2px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .form-group label {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .auth-input {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 150ms ease;
+  }
+
+  .auth-input:focus {
+    border-color: var(--accent);
+  }
+
+  .password-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .pwd-toggle {
+    position: absolute;
+    right: 0.65rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.2rem;
+  }
+
+  .auth-submit-btn {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 150ms ease, transform 100ms ease;
+  }
+
+  .auth-submit-btn:hover {
+    opacity: 0.92;
+  }
+
+  .auth-submit-btn:active {
+    transform: translateY(1px);
+  }
+
+  .auth-footer {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ----------------------------------------------------
+     STUDIO APP TOPBAR & NAVIGATION
+  ---------------------------------------------------- */
+  .studio-app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .studio-topbar {
+    width: min(calc(100% - 2rem), var(--max-width));
+    margin: 0 auto;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .studio-brand-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .studio-badge {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 0.15rem 0.4rem;
+    border-radius: 2px;
+  }
+
+  .studio-selector-wrap {
+    flex: 1;
+    min-width: 14rem;
+    max-width: 22rem;
+  }
+
+  .studio-select {
+    width: 100%;
+    padding: 0.45rem 0.65rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .studio-select:focus {
+    border-color: var(--accent);
+  }
+
+  .studio-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .studio-view-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .view-btn {
+    padding: 0.35rem 0.65rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  .view-btn.active {
+    background: var(--accent);
+    color: #ffffff;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #64748b;
+  }
+
+  .status-indicator.saved .status-dot {
+    background: var(--accent);
+  }
+
+  .status-indicator.unsaved .status-dot {
+    background: #f59e0b;
+  }
+
+  .status-indicator.saving .status-dot {
+    background: #3b82f6;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  .save-btn {
+    padding: 0.45rem 1rem;
+    background: var(--accent);
+    color: #ffffff;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border: none;
+    transition: opacity 120ms ease;
+  }
+
+  .save-btn:hover {
+    opacity: 0.9;
+  }
+
+  .save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .logout-btn {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+
+  .logout-btn:hover {
+    color: #ef4444;
+  }
+
+  /* ----------------------------------------------------
+     WRITING CANVAS & BLOG EMULATION
+  ---------------------------------------------------- */
+  .studio-canvas-shell {
+    width: min(calc(100% - 2rem), var(--max-width));
+    margin: 0 auto;
+    flex: 1;
+  }
+
+  .studio-post-page {
+    padding-top: 1.5rem;
+    padding-bottom: 4rem;
+  }
+
+  .studio-post-header {
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .studio-title-input {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.05em;
+  }
+
+  .studio-title-input::placeholder {
+    color: rgba(141, 152, 165, 0.4);
+  }
+
+  .studio-meta-row {
+    margin: 1.2rem 0 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  .date-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-soft);
+  }
+
+  .lock-indicator {
+    display: inline-block;
+    padding: 0.1rem 0.35rem;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    font-size: 0.7rem;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .draft-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .draft-checkbox-label input {
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .slug-row {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin: 0.6rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .slug-input {
+    flex: 1;
+    max-width: 25rem;
+    padding: 0.2rem 0.4rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    outline: none;
+  }
+
+  .slug-input:focus {
+    border-color: var(--accent);
+  }
+
+  .studio-custom-field {
+    margin: 0.8rem 0;
+  }
+
+  .studio-input {
+    width: 100%;
+    padding: 0.45rem 0.65rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    outline: none;
+  }
+
+  .studio-lede-input {
+    width: 100%;
+    max-width: 40rem;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-soft);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
+    resize: none;
+  }
+
+  .studio-lede-input::placeholder {
+    color: rgba(141, 152, 165, 0.4);
+  }
+
+  .tags-editor-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .tags-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+
+  .tag-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .tag-remove:hover {
+    color: #ef4444;
+  }
+
+  .tag-pill-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    outline: none;
+    padding: 0.15rem 0.3rem;
+    width: 8rem;
+  }
+
+  /* ----------------------------------------------------
+     BODY LAYOUT: SPLIT / EDIT / PREVIEW MODES
+  ---------------------------------------------------- */
+  .studio-body-layout {
+    display: grid;
+    gap: 2rem;
+    padding-top: 1.5rem;
+    min-height: 550px;
+  }
+
+  .studio-body-layout.view-split {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .studio-body-layout.view-edit {
+    grid-template-columns: 1fr;
+  }
+  .studio-body-layout.view-edit .preview-pane {
+    display: none;
+  }
+
+  .studio-body-layout.view-preview {
+    grid-template-columns: 1fr;
+  }
+  .studio-body-layout.view-preview .editor-pane {
+    display: none;
+  }
+
+  @media (max-width: 820px) {
+    .studio-body-layout.view-split {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Editor Pane */
+  .editor-pane {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .markdown-toolbar {
+    display: flex;
+    gap: 0.3rem;
+    padding: 0.4rem 0.6rem;
+    background: var(--surface-soft);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .markdown-toolbar button {
+    padding: 0.2rem 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  .markdown-toolbar button:hover {
+    color: var(--text);
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .studio-markdown-editor {
+    flex: 1;
+    width: 100%;
+    min-height: 500px;
+    padding: 1.25rem;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    line-height: 1.65;
+    resize: vertical;
+    white-space: pre-wrap;
+    tab-size: 2;
+  }
+
+  /* Preview Pane */
+  .preview-pane {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    padding: 1.25rem;
+    overflow-y: auto;
+    max-height: 800px;
+  }
+
+  .preview-banner {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .preview-badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .studio-live-prose {
+    padding-top: 0;
+  }
+
+  /* Accessibility visually hidden */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+</style>
+
+<script>
+  import { marked } from "marked";
+
+  // Configure marked for clean GFM rendering
+  marked.setOptions({
+    gfm: true,
+    breaks: true,
+  });
+
+  // State
+  interface AppState {
+    authenticated: boolean;
+    user: string | null;
+    currentType: "blog" | "site";
+    currentSlug: string; // for blog
+    currentSiteId: "about" | "home" | "";
+    isNew: boolean;
+    originalPublishedAt: string;
+    hasUnsavedChanges: boolean;
+    blogsList: Array<any>;
+    tags: string[];
+  }
+
+  const state: AppState = {
+    authenticated: false,
+    user: null,
+    currentType: "blog",
+    currentSlug: "",
+    currentSiteId: "",
+    isNew: true,
+    originalPublishedAt: "",
+    hasUnsavedChanges: false,
+    blogsList: [],
+    tags: [],
+  };
+
+  const DEFAULT_BLOG_TEMPLATE = `## Overview
+
+<!-- What are you building or exploring? -->
+
+## The Build & Technical Breakdown
+
+<!-- Code snippets, architecture, or problems encountered -->
+
+## Honest Reflection & Takeaway
+
+<!-- What worked, what failed, and what's next -->
+`;
+
+  // DOM Elements
+  const authGate = document.getElementById("auth-gate") as HTMLDivElement;
+  const studioMain = document.getElementById("studio-main") as HTMLDivElement;
+  const loginForm = document.getElementById("login-form") as HTMLFormElement;
+  const authError = document.getElementById("auth-error") as HTMLDivElement;
+  const loginBtn = document.getElementById("login-btn") as HTMLButtonElement;
+  const togglePwd = document.getElementById("toggle-password") as HTMLButtonElement;
+  const loginPassword = document.getElementById("login-password") as HTMLInputElement;
+
+  const contentPicker = document.getElementById("content-picker") as HTMLSelectElement;
+  const blogOptionsGroup = document.getElementById("blog-options-group") as HTMLOptGroupElement;
+  const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
+  const saveBtnText = document.getElementById("save-btn-text") as HTMLSpanElement;
+  const saveStatus = document.getElementById("save-status") as HTMLDivElement;
+  const statusText = document.getElementById("status-text") as HTMLSpanElement;
+  const logoutBtn = document.getElementById("logout-btn") as HTMLButtonElement;
+
+  const eyebrowText = document.getElementById("eyebrow-text") as HTMLParagraphElement;
+  const contentTitle = document.getElementById("content-title") as HTMLInputElement;
+  const dateValue = document.getElementById("date-value") as HTMLElement;
+  const dateLockIcon = document.getElementById("date-lock-icon") as HTMLElement;
+  const readingTimePill = document.getElementById("reading-time-pill") as HTMLSpanElement;
+  const isDraftCheckbox = document.getElementById("is-draft") as HTMLInputElement;
+  const draftStatusText = document.getElementById("draft-status-text") as HTMLSpanElement;
+  const metaRow = document.getElementById("meta-row") as HTMLDivElement;
+  const slugRow = document.getElementById("slug-row") as HTMLDivElement;
+  const contentSlug = document.getElementById("content-slug") as HTMLInputElement;
+  const taglineField = document.getElementById("tagline-field") as HTMLDivElement;
+  const contentTagline = document.getElementById("content-tagline") as HTMLInputElement;
+  const contentDescription = document.getElementById("content-description") as HTMLTextAreaElement;
+  const tagsRow = document.getElementById("tags-row") as HTMLDivElement;
+  const tagsChips = document.getElementById("tags-chips") as HTMLDivElement;
+  const tagInput = document.getElementById("tag-input") as HTMLInputElement;
+
+  const studioBodyContainer = document.getElementById("studio-body-container") as HTMLDivElement;
+  const contentBody = document.getElementById("content-body") as HTMLTextAreaElement;
+  const liveProse = document.getElementById("live-prose") as HTMLDivElement;
+
+  // ----------------------------------------------------
+  // Helpers
+  // ----------------------------------------------------
+  function calcReadingTime(text: string): string {
+    const words = (text || "").trim().split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.round(words / 220));
+    return `${minutes} min read`;
+  }
+
+  function setStatus(type: "ready" | "saved" | "unsaved" | "saving", message: string) {
+    saveStatus.className = `status-indicator ${type}`;
+    statusText.textContent = message;
+    if (type === "saving") {
+      saveBtn.disabled = true;
+      saveBtnText.textContent = "Saving...";
+    } else {
+      saveBtn.disabled = false;
+      saveBtnText.textContent = state.isNew ? "Publish" : "Save Changes";
+    }
+  }
+
+  function renderTags() {
+    tagsChips.innerHTML = "";
+    state.tags.forEach((tag, idx) => {
+      const chip = document.createElement("span");
+      chip.className = "tag-chip";
+      chip.textContent = `#${tag}`;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "tag-remove";
+      removeBtn.textContent = "×";
+      removeBtn.title = "Remove tag";
+      removeBtn.type = "button";
+      removeBtn.addEventListener("click", () => {
+        state.tags.splice(idx, 1);
+        renderTags();
+        markDirty();
+      });
+
+      chip.appendChild(removeBtn);
+      tagsChips.appendChild(chip);
+    });
+  }
+
+  function updateLivePreview() {
+    const markdown = contentBody.value;
+    liveProse.innerHTML = marked.parse(markdown) as string;
+    readingTimePill.textContent = calcReadingTime(markdown);
+  }
+
+  function markDirty() {
+    state.hasUnsavedChanges = true;
+    setStatus("unsaved", "Unsaved changes");
+  }
+
+  // ----------------------------------------------------
+  // Auth API
+  // ----------------------------------------------------
+  async function checkAuth(): Promise<boolean> {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated) {
+          state.authenticated = true;
+          state.user = data.user;
+          showStudio();
+          await loadContentList();
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn("Auth check failed:", e);
+    }
+    showAuthGate();
+    return false;
+  }
+
+  function showAuthGate() {
+    authGate.style.display = "flex";
+    studioMain.style.display = "none";
+  }
+
+  function showStudio() {
+    authGate.style.display = "none";
+    studioMain.style.display = "flex";
+  }
+
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    authError.style.display = "none";
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Verifying...";
+
+    const formData = new FormData(loginForm);
+    const username = formData.get("username") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "MaenStudio",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        authError.textContent = data.error || "Login failed. Check credentials.";
+        authError.style.display = "block";
+      } else {
+        state.authenticated = true;
+        state.user = data.user;
+        showStudio();
+        await loadContentList();
+      }
+    } catch {
+      authError.textContent = "Network error. Please try again.";
+      authError.style.display = "block";
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Sign In to Studio";
+    }
+  });
+
+  togglePwd.addEventListener("click", () => {
+    loginPassword.type = loginPassword.type === "password" ? "text" : "password";
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "X-Requested-With": "MaenStudio" },
+    });
+    window.location.reload();
+  });
+
+  // ----------------------------------------------------
+  // Content Management
+  // ----------------------------------------------------
+  async function loadContentList() {
+    try {
+      const res = await fetch("/api/content");
+      if (!res.ok) return;
+
+      const data = await res.json();
+      state.blogsList = data.blogs || [];
+
+      // Populate blog posts dropdown
+      blogOptionsGroup.innerHTML = "";
+      state.blogsList.forEach((blog) => {
+        const opt = document.createElement("option");
+        opt.value = `blog:${blog.slug}`;
+        const draftMark = blog.draft ? " [Draft]" : "";
+        opt.textContent = `${blog.title}${draftMark} (${blog.publishedAt || "no date"})`;
+        blogOptionsGroup.appendChild(opt);
+      });
+
+      // Default load: New Blog Post with template
+      loadNewBlogTemplate();
+    } catch (e) {
+      console.error("Failed to load content list:", e);
+    }
+  }
+
+  function loadNewBlogTemplate() {
+    state.currentType = "blog";
+    state.currentSlug = "";
+    state.currentSiteId = "";
+    state.isNew = true;
+    state.tags = [];
+
+    const today = new Date().toISOString().slice(0, 10);
+    state.originalPublishedAt = today;
+
+    eyebrowText.textContent = "ENTRY";
+    contentTitle.value = "";
+    contentTitle.placeholder = "Title of your new blog post...";
+
+    dateValue.textContent = today;
+    dateLockIcon.style.display = "none";
+    dateLockIcon.title = "Today's date will be permanently set upon publishing";
+
+    metaRow.style.display = "flex";
+    slugRow.style.display = "flex";
+    taglineField.style.display = "none";
+    tagsRow.style.display = "flex";
+
+    contentSlug.value = "";
+    contentDescription.value = "";
+    contentBody.value = DEFAULT_BLOG_TEMPLATE;
+    isDraftCheckbox.checked = false;
+    draftStatusText.textContent = "Published";
+
+    renderTags();
+    updateLivePreview();
+    setStatus("ready", "Template Loaded");
+    state.hasUnsavedChanges = false;
+  }
+
+  async function loadExistingBlog(slug: string) {
+    setStatus("saving", "Loading post...");
+    try {
+      const res = await fetch(`/api/content?type=blog&slug=${encodeURIComponent(slug)}`);
+      if (!res.ok) throw new Error("Post not found");
+
+      const data = await res.json();
+      const post = data.item;
+
+      state.currentType = "blog";
+      state.currentSlug = post.slug;
+      state.currentSiteId = "";
+      state.isNew = false;
+      state.originalPublishedAt = post.publishedAt;
+      state.tags = post.tags || [];
+
+      eyebrowText.textContent = "ENTRY";
+      contentTitle.value = post.title || "";
+      contentSlug.value = post.slug || "";
+      contentDescription.value = post.description || "";
+      contentBody.value = post.body || "";
+
+      // STRICT DATE REQUIREMENT:
+      // Show locked original date! It cannot be changed!
+      dateValue.textContent = post.publishedAt || "Permanent";
+      dateLockIcon.style.display = "inline-block";
+      dateLockIcon.title = "Written date is locked permanently and cannot be modified";
+
+      metaRow.style.display = "flex";
+      slugRow.style.display = "flex";
+      taglineField.style.display = "none";
+      tagsRow.style.display = "flex";
+
+      isDraftCheckbox.checked = post.draft;
+      draftStatusText.textContent = post.draft ? "Draft" : "Published";
+
+      renderTags();
+      updateLivePreview();
+      setStatus("ready", "Loaded");
+      state.hasUnsavedChanges = false;
+    } catch (err: any) {
+      alert("Error loading blog post: " + err.message);
+      setStatus("ready", "Error loading");
+    }
+  }
+
+  async function loadSitePage(id: "about" | "home") {
+    setStatus("saving", "Loading page...");
+    try {
+      const res = await fetch(`/api/content?type=site&id=${id}`);
+      if (!res.ok) throw new Error("Site page not found");
+
+      const data = await res.json();
+      const page = data.item;
+
+      state.currentType = "site";
+      state.currentSlug = "";
+      state.currentSiteId = id;
+      state.isNew = false;
+
+      eyebrowText.textContent = id.toUpperCase();
+      contentTitle.value = page.title || "";
+      contentDescription.value = page.description || "";
+      contentBody.value = page.body || "";
+
+      metaRow.style.display = "none";
+      slugRow.style.display = "none";
+      tagsRow.style.display = "none";
+
+      if (id === "home") {
+        taglineField.style.display = "block";
+        contentTagline.value = page.tagline || "";
+      } else {
+        taglineField.style.display = "none";
+      }
+
+      updateLivePreview();
+      setStatus("ready", "Loaded");
+      state.hasUnsavedChanges = false;
+    } catch (err: any) {
+      alert("Error loading site page: " + err.message);
+      setStatus("ready", "Error loading");
+    }
+  }
+
+  // Content Picker Change
+  contentPicker.addEventListener("change", async () => {
+    if (state.hasUnsavedChanges) {
+      const confirmSwitch = confirm("You have unsaved changes. Discard and switch?");
+      if (!confirmSwitch) {
+        // Reset select back
+        return;
+      }
+    }
+
+    const val = contentPicker.value;
+    if (val === "new") {
+      loadNewBlogTemplate();
+    } else if (val.startsWith("blog:")) {
+      const slug = val.replace("blog:", "");
+      await loadExistingBlog(slug);
+    } else if (val.startsWith("site:")) {
+      const id = val.replace("site:", "") as "about" | "home";
+      await loadSitePage(id);
+    }
+  });
+
+  // Save / Publish
+  async function saveCurrentContent() {
+    setStatus("saving", "Saving...");
+
+    try {
+      if (state.currentType === "blog") {
+        const title = contentTitle.value.trim();
+        if (!title) {
+          alert("Please enter a title for the blog post.");
+          setStatus("ready", "Missing title");
+          return;
+        }
+
+        let slug = contentSlug.value.trim();
+        if (!slug) {
+          slug = title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+          contentSlug.value = slug;
+        }
+
+        const payload = {
+          type: "blog",
+          slug,
+          title,
+          description: contentDescription.value.trim(),
+          draft: isDraftCheckbox.checked,
+          tags: state.tags,
+          body: contentBody.value,
+        };
+
+        const res = await fetch("/api/content", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "MaenStudio",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Save failed.");
+        }
+
+        state.isNew = false;
+        state.currentSlug = data.slug;
+        state.originalPublishedAt = data.publishedAt;
+        dateValue.textContent = data.publishedAt;
+        dateLockIcon.style.display = "inline-block";
+        state.hasUnsavedChanges = false;
+
+        const methods = data.persistedVia?.join(", ") || "saved";
+        setStatus("saved", `Saved (${methods})`);
+
+        // Refresh dropdown
+        await loadContentList();
+        contentPicker.value = `blog:${data.slug}`;
+      } else if (state.currentType === "site") {
+        const payload = {
+          type: "site",
+          id: state.currentSiteId,
+          title: contentTitle.value.trim(),
+          tagline: state.currentSiteId === "home" ? contentTagline.value.trim() : undefined,
+          description: contentDescription.value.trim(),
+          body: contentBody.value,
+        };
+
+        const res = await fetch("/api/content", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "MaenStudio",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Save failed.");
+        }
+
+        state.hasUnsavedChanges = false;
+        const methods = data.persistedVia?.join(", ") || "saved";
+        setStatus("saved", `Saved (${methods})`);
+      }
+    } catch (err: any) {
+      alert("Failed to save: " + err.message);
+      setStatus("unsaved", "Save failed");
+    }
+  }
+
+  saveBtn.addEventListener("click", saveCurrentContent);
+
+  // Keyboard shortcut Ctrl+S / Cmd+S
+  window.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      if (state.authenticated) {
+        saveCurrentContent();
+      }
+    }
+  });
+
+  // Warn before closing tab if unsaved changes
+  window.addEventListener("beforeunload", (e) => {
+    if (state.hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+
+  // Input Change Listeners
+  contentTitle.addEventListener("input", () => {
+    if (state.isNew && state.currentType === "blog") {
+      contentSlug.value = contentTitle.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+    markDirty();
+  });
+
+  contentSlug.addEventListener("input", markDirty);
+  contentDescription.addEventListener("input", markDirty);
+  contentTagline.addEventListener("input", markDirty);
+
+  isDraftCheckbox.addEventListener("change", () => {
+    draftStatusText.textContent = isDraftCheckbox.checked ? "Draft" : "Published";
+    markDirty();
+  });
+
+  // Body Input Listener
+  contentBody.addEventListener("input", () => {
+    updateLivePreview();
+    markDirty();
+  });
+
+  // Support Tab Key in Markdown textarea
+  contentBody.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const start = contentBody.selectionStart;
+      const end = contentBody.selectionEnd;
+      contentBody.value = contentBody.value.substring(0, start) + "  " + contentBody.value.substring(end);
+      contentBody.selectionStart = contentBody.selectionEnd = start + 2;
+      updateLivePreview();
+      markDirty();
+    }
+  });
+
+  // Toolbar actions
+  const toolbarButtons = document.querySelectorAll(".markdown-toolbar button");
+  toolbarButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const insert = btn.getAttribute("data-insert");
+      const wrap = btn.getAttribute("data-wrap");
+      const start = contentBody.selectionStart;
+      const end = contentBody.selectionEnd;
+      const selected = contentBody.value.substring(start, end);
+
+      if (wrap) {
+        contentBody.value =
+          contentBody.value.substring(0, start) + wrap + (selected || "text") + wrap + contentBody.value.substring(end);
+        contentBody.selectionStart = start + wrap.length;
+        contentBody.selectionEnd = start + wrap.length + (selected ? selected.length : 4);
+      } else if (insert) {
+        contentBody.value = contentBody.value.substring(0, start) + insert + contentBody.value.substring(end);
+        contentBody.selectionStart = contentBody.selectionEnd = start + insert.length;
+      }
+
+      contentBody.focus();
+      updateLivePreview();
+      markDirty();
+    });
+  });
+
+  // Tag Input Handler
+  tagInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const val = tagInput.value.trim().replace(/^#|,$/g, "");
+      if (val && !state.tags.includes(val)) {
+        state.tags.push(val);
+        renderTags();
+        markDirty();
+      }
+      tagInput.value = "";
+    }
+  });
+
+  // View Switcher (Edit, Split, Preview)
+  const viewBtns = document.querySelectorAll(".view-btn");
+  viewBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      viewBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const view = btn.getAttribute("data-view");
+
+      studioBodyContainer.className = `studio-body-layout view-${view}`;
+    });
+  });
+
+  // Initialize
+  checkAuth();
+</script>

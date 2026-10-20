@@ -7,6 +7,7 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "test": "node ./scripts/test-admin.mjs",
     "new:post": "node ./scripts/new-post.mjs"
   },
   "keywords": [
@@ -18,6 +19,7 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "astro": "^6.0.8"
+    "astro": "^6.0.8",
+    "marked": "^18.1.1"
   }
 }

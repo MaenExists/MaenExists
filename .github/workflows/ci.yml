@@ -23,5 +23,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Run verification tests
+        run: npm test
+
       - name: Build site
         run: npm run build
