@@ -9,9 +9,10 @@
 - [x] Removed placeholder blog posts and initial draft post
 - [x] Obsidian friction-free writing workflow and blog template integration
 - [x] Secret browser writing studio at /write with rock-solid authentication, live blog emulation, template preloading, and permanent date lock on edits
+- [x] Stabilize CI pipeline (GitHub Actions lockfile resolution)
 
 ## In Progress
-- [ ] Stabilize CI pipeline (GitHub Actions lockfile resolution) and domain alignment
+- [ ] Domain alignment
 
 ## Future Tasks
 - [ ] Write first set of technical blog posts
