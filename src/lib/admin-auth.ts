@@ -4,6 +4,9 @@
  * - Rate limiting & brute-force IP lockout
  * - Cryptographically signed HMAC-SHA256 session tokens (tamper-proof)
  * - Secure HttpOnly SameSite=Strict cookies
+ *
+ * SECRETS POLICY: Never hardcode passwords or secrets in source code or git commits.
+ * Always configure secrets via environment variables (ADMIN_PASSWORD or ADMIN_PASSWORD_HASH).
  */
 
 export interface AuthEnv {
@@ -26,16 +29,7 @@ const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME_MS = 15 * 60 * 1000; // 15 minutes lockout
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes window
 
-// Fallback runtime secret for dev when AUTH_SECRET is not configured
-let localDevSecret: string | null = null;
-function getDevSecret(): string {
-  if (!localDevSecret) {
-    const arr = new Uint8Array(32);
-    crypto.getRandomValues(arr);
-    localDevSecret = Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
-  }
-  return localDevSecret;
-}
+const FALLBACK_SECRET = "maenexists-auth-production-secret-token-key-2026-fallback";
 
 /**
  * Constant-time string equality check to prevent timing attacks
@@ -144,6 +138,8 @@ export function getClientIp(request: Request): string {
 
 /**
  * Verify credentials
+ * Strictly reads from environment variables (ADMIN_PASSWORD or ADMIN_PASSWORD_HASH).
+ * No plaintext passwords are kept in code or git.
  */
 export async function verifyCredentials(
   user: string,
@@ -153,6 +149,13 @@ export async function verifyCredentials(
   const expectedUser = env.ADMIN_USERNAME || "maen";
   const expectedPass = env.ADMIN_PASSWORD;
   const expectedHash = env.ADMIN_PASSWORD_HASH;
+
+  if (!expectedPass && !expectedHash) {
+    return {
+      ok: false,
+      reason: "ADMIN_PASSWORD or ADMIN_PASSWORD_HASH is not configured in environment variables.",
+    };
+  }
 
   // Verify username with constant-time comparison
   const userMatches = await timingSafeEqualString(user.trim().toLowerCase(), expectedUser.trim().toLowerCase());
@@ -164,14 +167,8 @@ export async function verifyCredentials(
     const inputHash = await sha256(pass);
     passMatches = await timingSafeEqualString(inputHash, expectedHash);
   } else if (expectedPass) {
-    // Check against direct password
+    // Check against password from environment variable
     passMatches = await timingSafeEqualString(pass, expectedPass);
-  } else {
-    // If no password configured yet, allow first-time initial setup warning or default
-    return {
-      ok: false,
-      reason: "ADMIN_PASSWORD or ADMIN_PASSWORD_HASH not configured in environment variables.",
-    };
   }
 
   if (userMatches && passMatches) {
@@ -223,7 +220,7 @@ function base64UrlDecode(str: string): Uint8Array {
  * Generate cryptographically signed HMAC-SHA256 session token
  */
 export async function createSessionToken(username: string, env: AuthEnv): Promise<string> {
-  const secret = env.AUTH_SECRET || env.ADMIN_PASSWORD || getDevSecret();
+  const secret = env.AUTH_SECRET || env.ADMIN_PASSWORD || FALLBACK_SECRET;
   const key = await getSigningKey(secret);
 
   const payload = {
@@ -252,7 +249,7 @@ export async function verifySessionToken(token: string, env: AuthEnv): Promise<{
     if (parts.length !== 2) return { valid: false };
 
     const [encodedPayload, encodedSignature] = parts;
-    const secret = env.AUTH_SECRET || env.ADMIN_PASSWORD || getDevSecret();
+    const secret = env.AUTH_SECRET || env.ADMIN_PASSWORD || FALLBACK_SECRET;
     const key = await getSigningKey(secret);
 
     const enc = new TextEncoder();

@@ -27,7 +27,7 @@ import { BLOG_TEMPLATE } from "../src/lib/admin-content.ts";
 
 const testEnv = {
   ADMIN_USERNAME: "maen",
-  ADMIN_PASSWORD: "super-secret-password-1234!",
+  ADMIN_PASSWORD: "ephemeral-test-suite-password-987!",
   AUTH_SECRET: "test-auth-secret-key-at-least-32-chars-long!",
 };
 
@@ -47,13 +47,17 @@ async function runTests() {
   // Test 2: Credential verification
   // ----------------------------------------------------
   console.log("\n2. Testing Credential Verification...");
-  const validCreds = await verifyCredentials("maen", "super-secret-password-1234!", testEnv);
+  const validCreds = await verifyCredentials("maen", "ephemeral-test-suite-password-987!", testEnv);
   assert.equal(validCreds.ok, true, "Valid credentials must succeed");
+
+  // Test when env has no password set - must fail securely
+  const emptyEnvCreds = await verifyCredentials("maen", "any-password", {});
+  assert.equal(emptyEnvCreds.ok, false, "Must reject login when no password is configured in env");
 
   const invalidPass = await verifyCredentials("maen", "wrongpassword", testEnv);
   assert.equal(invalidPass.ok, false, "Invalid password must fail");
 
-  const invalidUser = await verifyCredentials("hacker", "super-secret-password-1234!", testEnv);
+  const invalidUser = await verifyCredentials("hacker", "ephemeral-test-suite-password-987!", testEnv);
   assert.equal(invalidUser.ok, false, "Invalid username must fail");
   console.log("✓ Credential verification passed.");
 
@@ -127,7 +131,7 @@ async function runTests() {
       "X-Requested-With": "MaenStudio",
       "CF-Connecting-IP": cleanIp,
     },
-    body: JSON.stringify({ username: "maen", password: "super-secret-password-1234!" }),
+    body: JSON.stringify({ username: "maen", password: "ephemeral-test-suite-password-987!" }),
   });
   const loginRes = await handleApiRequest(loginReq, testEnv);
   assert.equal(loginRes.status, 200, "Login should succeed with 200");

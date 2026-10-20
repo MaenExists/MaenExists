@@ -1,5 +1,4 @@
 import { defineConfig } from "astro/config";
-import { handleApiRequest } from "./src/lib/admin-api.ts";
 
 function adminApiDevPlugin() {
   return {
@@ -8,6 +7,7 @@ function adminApiDevPlugin() {
       server.middlewares.use(async (req, res, next) => {
         if (req.url && req.url.startsWith("/api/")) {
           try {
+            const { handleApiRequest } = await import("./src/lib/admin-api.ts");
             const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
             const headers = new Headers();
             for (const [key, value] of Object.entries(req.headers)) {

@@ -154,20 +154,35 @@ async function fetchFromGitHub(path: string, env: ContentEnv): Promise<{ content
   const repo = env.GITHUB_REPO || "MaenExists/MaenExists";
   const branch = env.GITHUB_BRANCH || "main";
 
-  if (!token) return null;
-
+  // First try raw.githubusercontent.com (fast, no token required for public repos)
   try {
+    const rawRes = await fetch(`https://raw.githubusercontent.com/${repo}/${branch}/${path}`, {
+      headers: { "User-Agent": "MaenStudio-BlogWriter" },
+    });
+    if (rawRes.ok) {
+      const content = await rawRes.text();
+      return { content };
+    }
+  } catch (e) {
+    // fallback to api
+  }
+
+  // If token is provided or raw failed, try API
+  try {
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "MaenStudio-BlogWriter",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": "MaenStudio-BlogWriter",
-      },
+      headers,
     });
 
     if (res.status === 404) return null;
     if (!res.ok) {
-      console.error(`GitHub API error ${res.status}:`, await res.text());
       return null;
     }
 
@@ -176,7 +191,6 @@ async function fetchFromGitHub(path: string, env: ContentEnv): Promise<{ content
 
     // Decode base64
     const decoded = atob(data.content.replace(/\s/g, ""));
-    // Handle UTF-8
     const bytes = Uint8Array.from(decoded, (c) => c.charCodeAt(0));
     const content = new TextDecoder().decode(bytes);
 
@@ -258,8 +272,10 @@ async function commitToGitHub(
 async function readLocalFile(relPath: string): Promise<string | null> {
   if (!hasNodeFs()) return null;
   try {
-    const { readFile } = await import("node:fs/promises");
-    const path = await import("node:path");
+    const fsMod = "node:fs/promises";
+    const pathMod = "node:path";
+    const { readFile } = await import(/* @vite-ignore */ fsMod);
+    const path = await import(/* @vite-ignore */ pathMod);
     const fullPath = path.join(process.cwd(), relPath);
     return await readFile(fullPath, "utf-8");
   } catch {
@@ -270,8 +286,10 @@ async function readLocalFile(relPath: string): Promise<string | null> {
 async function writeLocalFile(relPath: string, content: string): Promise<boolean> {
   if (!hasNodeFs()) return false;
   try {
-    const { writeFile, mkdir } = await import("node:fs/promises");
-    const path = await import("node:path");
+    const fsMod = "node:fs/promises";
+    const pathMod = "node:path";
+    const { writeFile, mkdir } = await import(/* @vite-ignore */ fsMod);
+    const path = await import(/* @vite-ignore */ pathMod);
     const fullPath = path.join(process.cwd(), relPath);
     await mkdir(path.dirname(fullPath), { recursive: true });
     await writeFile(fullPath, content, "utf-8");
@@ -285,8 +303,10 @@ async function writeLocalFile(relPath: string, content: string): Promise<boolean
 async function listLocalBlogFiles(): Promise<string[]> {
   if (!hasNodeFs()) return [];
   try {
-    const { readdir, stat } = await import("node:fs/promises");
-    const path = await import("node:path");
+    const fsMod = "node:fs/promises";
+    const pathMod = "node:path";
+    const { readdir } = await import(/* @vite-ignore */ fsMod);
+    const path = await import(/* @vite-ignore */ pathMod);
     const blogDir = path.join(process.cwd(), "contents", "blog");
 
     async function walk(dir: string, base: string): Promise<string[]> {
@@ -315,17 +335,49 @@ async function listLocalBlogFiles(): Promise<string[]> {
 // Public Content API Functions
 // ==========================================
 
+async function listGitHubBlogFiles(env: ContentEnv): Promise<string[]> {
+  const repo = env.GITHUB_REPO || "MaenExists/MaenExists";
+  const branch = env.GITHUB_BRANCH || "main";
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`, {
+      headers: { "User-Agent": "MaenStudio-BlogWriter" },
+    });
+    if (!res.ok) return [];
+    const data: any = await res.json();
+    if (!Array.isArray(data.tree)) return [];
+    return data.tree
+      .filter(
+        (item: any) =>
+          item.path.startsWith("contents/blog/") &&
+          item.path.endsWith(".md") &&
+          !item.path.includes("/templates/") &&
+          !item.path.endsWith("/Welcome.md")
+      )
+      .map((item: any) => item.path.replace(/^contents\/blog\//, ""));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * List all available content items (Blogs and Site Pages)
  */
 export async function listAllContent(env: ContentEnv): Promise<{ blogs: BlogItem[]; site: string[] }> {
   const blogs: BlogItem[] = [];
 
-  // Try local FS first
-  const localFiles = await listLocalBlogFiles();
+  // Try local FS first, fallback to GitHub
+  let blogFiles = await listLocalBlogFiles();
+  if (blogFiles.length === 0) {
+    blogFiles = await listGitHubBlogFiles(env);
+  }
 
-  for (const file of localFiles) {
-    const raw = await readLocalFile(`contents/blog/${file}`);
+  for (const file of blogFiles) {
+    let raw = await readLocalFile(`contents/blog/${file}`);
+    if (!raw) {
+      const gh = await fetchFromGitHub(`contents/blog/${file}`, env);
+      if (gh) raw = gh.content;
+    }
+
     if (raw) {
       const { frontmatter, body } = parseFrontmatter(raw);
       const cleanId = file.replace(/\/index\.md$/, "").replace(/\.md$/, "");
@@ -381,7 +433,7 @@ export async function getBlogPost(slug: string, env: ContentEnv): Promise<BlogIt
   }
 
   // If not on local fs, check GitHub
-  if (!raw && env.GITHUB_TOKEN) {
+  if (!raw) {
     for (const p of candidates) {
       const gh = await fetchFromGitHub(p, env);
       if (gh) {
@@ -415,7 +467,7 @@ export async function getSiteContent(id: "about" | "home", env: ContentEnv): Pro
   const relPath = `contents/site/${id}.md`;
   let raw = await readLocalFile(relPath);
 
-  if (!raw && env.GITHUB_TOKEN) {
+  if (!raw) {
     const gh = await fetchFromGitHub(relPath, env);
     if (gh) raw = gh.content;
   }

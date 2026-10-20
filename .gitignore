@@ -5,6 +5,8 @@ dist
 .obsidian
 .wrangler
 .env
+bun.lock
+bun.lockb
 .env.local
 .env.*.local
 !.env.example
