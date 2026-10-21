@@ -1,10 +1,10 @@
 ---
-title: "Studio Live Verification Test"
-description: "Verifying live save and publish capability"
+title: "Studio Live Verification Test (Updated)"
+description: "Verifying live update with sha resolution"
 publishedAt: 2026-10-21
 draft: true
-tags: ["test"]
+tags: ["test", "updated"]
 ---
 
 ## Overview
-Live verification content from /write.
+Live update verification content with SHA resolution working flawlessly.
