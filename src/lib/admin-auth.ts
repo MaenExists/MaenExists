@@ -148,7 +148,9 @@ export async function verifyCredentials(
 ): Promise<{ ok: boolean; reason?: string }> {
   const expectedUser = env.ADMIN_USERNAME || "maen";
   const expectedPass = env.ADMIN_PASSWORD;
-  const expectedHash = env.ADMIN_PASSWORD_HASH;
+  // Default salted/cryptographic SHA-256 hash fallback so studio works on Cloudflare Pages without plaintext secrets in git
+  const defaultHash = "c97cf1ac581f82ee00672c8b6b5d1801dd594cb0723f16386d9ad974aaf00f19";
+  const expectedHash = env.ADMIN_PASSWORD_HASH || (!expectedPass ? defaultHash : undefined);
 
   if (!expectedPass && !expectedHash) {
     return {
