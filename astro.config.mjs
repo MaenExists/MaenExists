@@ -1,4 +1,5 @@
 import { defineConfig } from "astro/config";
+import { loadEnv } from "vite";
 
 function adminApiDevPlugin() {
   return {
@@ -8,6 +9,8 @@ function adminApiDevPlugin() {
         if (req.url && req.url.startsWith("/api/")) {
           try {
             const { handleApiRequest } = await import("./src/lib/admin-api.ts");
+            const loadedEnv = loadEnv("development", process.cwd(), "");
+            const mergedEnv = { ...process.env, ...loadedEnv };
             const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
             const headers = new Headers();
             for (const [key, value] of Object.entries(req.headers)) {
@@ -31,7 +34,7 @@ function adminApiDevPlugin() {
               body,
             });
 
-            const webRes = await handleApiRequest(webReq, process.env);
+            const webRes = await handleApiRequest(webReq, mergedEnv);
 
             res.statusCode = webRes.status;
             webRes.headers.forEach((val, key) => {

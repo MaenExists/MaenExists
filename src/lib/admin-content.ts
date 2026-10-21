@@ -149,6 +149,35 @@ function hasNodeFs(): boolean {
 // GitHub API Storage Provider
 // ==========================================
 
+async function getFileShaFromGitHub(path: string, env: ContentEnv): Promise<string | undefined> {
+  const token = env.GITHUB_TOKEN;
+  const repo = env.GITHUB_REPO || "MaenExists/MaenExists";
+  const branch = env.GITHUB_BRANCH || "main";
+
+  try {
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "MaenStudio-BlogWriter",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`, {
+      headers,
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (res.ok) {
+      const data: any = await res.json();
+      return data.sha;
+    }
+  } catch (err) {
+    // File may not exist yet or connection error
+  }
+  return undefined;
+}
+
 async function fetchFromGitHub(path: string, env: ContentEnv): Promise<{ content: string; sha?: string } | null> {
   const token = env.GITHUB_TOKEN;
   const repo = env.GITHUB_REPO || "MaenExists/MaenExists";
@@ -158,6 +187,7 @@ async function fetchFromGitHub(path: string, env: ContentEnv): Promise<{ content
   try {
     const rawRes = await fetch(`https://raw.githubusercontent.com/${repo}/${branch}/${path}`, {
       headers: { "User-Agent": "MaenStudio-BlogWriter" },
+      signal: AbortSignal.timeout(4000),
     });
     if (rawRes.ok) {
       const content = await rawRes.text();
@@ -179,6 +209,7 @@ async function fetchFromGitHub(path: string, env: ContentEnv): Promise<{ content
 
     const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`, {
       headers,
+      signal: AbortSignal.timeout(5000),
     });
 
     if (res.status === 404) return null;
@@ -213,17 +244,14 @@ async function commitToGitHub(
   const branch = env.GITHUB_BRANCH || "main";
 
   if (!token) {
-    return { ok: false, error: "GITHUB_TOKEN is missing in environment variables." };
+    return { ok: false, error: "GITHUB_TOKEN is missing. Please configure your GitHub token." };
   }
 
   try {
-    // If sha wasn't passed, check if file exists to get sha
+    // Fetch file sha directly from GitHub API if not provided so updates don't fail with 422
     let sha = existingSha;
     if (!sha) {
-      const existing = await fetchFromGitHub(path, env);
-      if (existing) {
-        sha = existing.sha;
-      }
+      sha = await getFileShaFromGitHub(path, env);
     }
 
     // UTF-8 base64 encoding
@@ -252,6 +280,7 @@ async function commitToGitHub(
         "User-Agent": "MaenStudio-BlogWriter",
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!res.ok) {
@@ -554,7 +583,7 @@ export async function saveBlogPost(
   // 2. Commit to GitHub if GITHUB_TOKEN is available
   if (env.GITHUB_TOKEN) {
     const action = existingPost ? "Update" : "Publish";
-    const commitMsg = `${action} blog: ${frontmatter.title} [skip ci]`;
+    const commitMsg = `${action} blog: ${frontmatter.title}`;
     const ghRes = await commitToGitHub(targetRelPath, fileContent, commitMsg, env);
     if (ghRes.ok) {
       persistedVia.push("github-commit");

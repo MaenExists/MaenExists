@@ -47,6 +47,14 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
   const method = request.method.toUpperCase();
   const isHttps = url.protocol === "https:";
 
+  // Allow client-supplied GitHub token (e.g. from /write UI stored in localStorage)
+  // or fall back to environment variable
+  const clientGithubToken = request.headers.get("x-github-token")?.trim();
+  const effectiveEnv: AdminEnv = {
+    ...env,
+    GITHUB_TOKEN: clientGithubToken || env.GITHUB_TOKEN,
+  };
+
   // CSRF protection for non-GET requests
   if (method === "POST" || method === "PUT" || method === "DELETE") {
     const customHeader = request.headers.get("x-requested-with");
@@ -103,7 +111,7 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
       return json({ error: "Username and password are required." }, 400);
     }
 
-    const verification = await verifyCredentials(username, password, env);
+    const verification = await verifyCredentials(username, password, effectiveEnv);
 
     if (!verification.ok) {
       recordFailedAttempt(ip);
@@ -113,13 +121,13 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
     resetAttempts(ip);
 
     // Create session token
-    const token = await createSessionToken(username, env);
+    const token = await createSessionToken(username, effectiveEnv);
     const cookieHeader = createSessionCookie(token, isHttps);
 
     const headers = new Headers();
     headers.append("Set-Cookie", cookieHeader);
 
-    return json({ ok: true, user: username }, { status: 200, headers });
+    return json({ ok: true, user: username, hasGithubToken: Boolean(effectiveEnv.GITHUB_TOKEN) }, { status: 200, headers });
   }
 
   // GET /api/auth/me
@@ -129,12 +137,12 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
       return json({ authenticated: false }, 200);
     }
 
-    const session = await verifySessionToken(token, env);
+    const session = await verifySessionToken(token, effectiveEnv);
     if (!session.valid) {
       return json({ authenticated: false }, 200);
     }
 
-    return json({ authenticated: true, user: session.user }, 200);
+    return json({ authenticated: true, user: session.user, hasGithubToken: Boolean(effectiveEnv.GITHUB_TOKEN) }, 200);
   }
 
   // POST /api/auth/logout
@@ -150,7 +158,7 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
   // ----------------------------------------------------
 
   const sessionToken = getSessionFromCookie(request);
-  const session = sessionToken ? await verifySessionToken(sessionToken, env) : { valid: false };
+  const session = sessionToken ? await verifySessionToken(sessionToken, effectiveEnv) : { valid: false };
 
   if (!session.valid) {
     return json({ error: "Unauthorized. Please log in to /write." }, 401);
@@ -163,7 +171,7 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
     const id = url.searchParams.get("id");
 
     if (type === "blog" && slug) {
-      const post = await getBlogPost(slug, env);
+      const post = await getBlogPost(slug, effectiveEnv);
       if (!post) {
         return json({ error: `Blog post "${slug}" not found.` }, 404);
       }
@@ -171,7 +179,7 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
     }
 
     if (type === "site" && (id === "about" || id === "home")) {
-      const siteItem = await getSiteContent(id, env);
+      const siteItem = await getSiteContent(id, effectiveEnv);
       if (!siteItem) {
         return json({ error: `Site content "${id}" not found.` }, 404);
       }
@@ -193,7 +201,7 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
     }
 
     // Default: list all content
-    const contentList = await listAllContent(env);
+    const contentList = await listAllContent(effectiveEnv);
     return json({ ok: true, ...contentList });
   }
 
@@ -220,7 +228,7 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
           body: contentBody || "",
           id,
         },
-        env
+        effectiveEnv
       );
 
       if (!res.ok) {
@@ -250,7 +258,7 @@ export async function handleApiRequest(request: Request, env: AdminEnv = {}): Pr
           description: description || "",
           body: contentBody || "",
         },
-        env
+        effectiveEnv
       );
 
       if (!res.ok) {

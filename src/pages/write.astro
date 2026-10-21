@@ -90,6 +90,12 @@ import { siteConfig } from "../data/site";
             <button type="button" class="view-btn" data-view="preview" title="Full Blog Preview">Preview</button>
           </div>
 
+          <!-- GitHub Sync Status / Token Button -->
+          <button id="github-sync-btn" type="button" class="github-sync-btn" title="GitHub Token Settings">
+            <span id="github-sync-dot" class="status-dot"></span>
+            <span id="github-sync-label">GitHub</span>
+          </button>
+
           <!-- Status indicator -->
           <div id="save-status" class="status-indicator" title="Save status">
             <span class="status-dot"></span>
@@ -221,6 +227,38 @@ import { siteConfig } from "../data/site";
             </div>
           </article>
         </main>
+      </div>
+
+      <!-- GITHUB TOKEN MODAL -->
+      <div id="github-token-modal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="token-modal-title">
+        <div class="modal-card">
+          <header class="modal-header">
+            <h3 id="token-modal-title">GitHub Sync Settings</h3>
+            <button type="button" id="close-token-modal" class="close-modal-btn" aria-label="Close modal">×</button>
+          </header>
+          <div class="modal-body">
+            <p class="modal-desc">
+              When publishing from the browser on Cloudflare Pages, changes are committed to the <code>MaenExists/MaenExists</code> repository to trigger an automatic build and deployment.
+            </p>
+            <div id="token-server-status" class="token-notice"></div>
+            <div class="form-group">
+              <label for="gh-token-input">Personal Access Token (PAT)</label>
+              <input
+                id="gh-token-input"
+                type="password"
+                placeholder="ghp_... or github_pat_..."
+                class="auth-input"
+                autocomplete="off"
+              />
+              <span class="hint-text">Requires <code>repo</code> scope (classic) or <code>Contents: Read and write</code> (fine-grained). Saved privately in your browser's localStorage.</span>
+            </div>
+            <div id="token-status-msg" class="modal-alert" style="display: none;"></div>
+          </div>
+          <footer class="modal-actions">
+            <button type="button" id="clear-token-btn" class="secondary-btn">Clear Token</button>
+            <button type="button" id="save-token-btn" class="save-btn">Save Token</button>
+          </footer>
+        </div>
       </div>
     </div>
   </div>
@@ -513,6 +551,163 @@ import { siteConfig } from "../data/site";
 
   .logout-btn:hover {
     color: #ef4444;
+  }
+
+  /* GitHub Sync Button */
+  .github-sync-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.65rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 120ms ease;
+  }
+
+  .github-sync-btn:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+  }
+
+  .github-sync-btn.connected .status-dot {
+    background: #10b981;
+  }
+
+  .github-sync-btn.missing .status-dot {
+    background: #f59e0b;
+  }
+
+  /* Modal Backdrop & Card */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    max-width: 30rem;
+    width: 100%;
+    padding: 1.6rem;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.1rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.3rem;
+  }
+
+  .close-modal-btn:hover {
+    color: var(--text);
+  }
+
+  .modal-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin: 0 0 1rem;
+  }
+
+  .token-notice {
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1.1rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #6ee7b7;
+  }
+
+  .hint-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+    line-height: 1.35;
+    display: block;
+  }
+
+  .hint-text code {
+    background: var(--bg);
+    padding: 0.1rem 0.3rem;
+    border: 1px solid var(--border);
+    font-size: 0.72rem;
+  }
+
+  .modal-alert {
+    margin-top: 0.9rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .modal-alert.error {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+  }
+
+  .modal-alert.success {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .secondary-btn {
+    padding: 0.45rem 0.85rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .secondary-btn:hover {
+    color: var(--text);
+    border-color: var(--text);
   }
 
   /* ----------------------------------------------------
@@ -901,6 +1096,88 @@ import { siteConfig } from "../data/site";
   const statusText = document.getElementById("status-text") as HTMLSpanElement;
   const logoutBtn = document.getElementById("logout-btn") as HTMLButtonElement;
 
+  const githubSyncBtn = document.getElementById("github-sync-btn") as HTMLButtonElement;
+  const githubSyncDot = document.getElementById("github-sync-dot") as HTMLSpanElement;
+  const githubSyncLabel = document.getElementById("github-sync-label") as HTMLSpanElement;
+
+  const githubTokenModal = document.getElementById("github-token-modal") as HTMLDivElement;
+  const closeTokenModal = document.getElementById("close-token-modal") as HTMLButtonElement;
+  const ghTokenInput = document.getElementById("gh-token-input") as HTMLInputElement;
+  const tokenServerStatus = document.getElementById("token-server-status") as HTMLDivElement;
+  const tokenStatusMsg = document.getElementById("token-status-msg") as HTMLDivElement;
+  const saveTokenBtn = document.getElementById("save-token-btn") as HTMLButtonElement;
+  const clearTokenBtn = document.getElementById("clear-token-btn") as HTMLButtonElement;
+
+  const GITHUB_TOKEN_KEY = "maen_github_token";
+  let serverHasGithubToken = false;
+
+  function getClientGithubToken(): string {
+    return localStorage.getItem(GITHUB_TOKEN_KEY)?.trim() || "";
+  }
+
+  function updateGithubSyncStatus() {
+    const clientToken = getClientGithubToken();
+    if (serverHasGithubToken || clientToken) {
+      githubSyncBtn.className = "github-sync-btn connected";
+      githubSyncLabel.textContent = "GitHub: Ready";
+      githubSyncBtn.title = serverHasGithubToken
+        ? "GitHub Token configured on server (or browser)"
+        : "GitHub Token stored in browser";
+    } else {
+      githubSyncBtn.className = "github-sync-btn missing";
+      githubSyncLabel.textContent = "GitHub: Setup";
+      githubSyncBtn.title = "Click to set up GitHub Token for publishing from browser";
+    }
+  }
+
+  function openGithubTokenModal() {
+    ghTokenInput.value = getClientGithubToken();
+    tokenStatusMsg.style.display = "none";
+    if (serverHasGithubToken) {
+      tokenServerStatus.innerHTML = "✓ Server environment has a <code>GITHUB_TOKEN</code> active.";
+      tokenServerStatus.style.display = "block";
+    } else {
+      tokenServerStatus.innerHTML = "ℹ️ Cloudflare Pages edge worker requires a GitHub Token to commit blog posts.";
+      tokenServerStatus.style.display = "block";
+    }
+    githubTokenModal.style.display = "flex";
+    ghTokenInput.focus();
+  }
+
+  function closeGithubModal() {
+    githubTokenModal.style.display = "none";
+  }
+
+  githubSyncBtn?.addEventListener("click", openGithubTokenModal);
+  closeTokenModal?.addEventListener("click", closeGithubModal);
+
+  saveTokenBtn?.addEventListener("click", () => {
+    const token = ghTokenInput.value.trim();
+    if (!token) {
+      tokenStatusMsg.className = "modal-alert error";
+      tokenStatusMsg.textContent = "Please enter a valid GitHub token.";
+      tokenStatusMsg.style.display = "block";
+      return;
+    }
+    localStorage.setItem(GITHUB_TOKEN_KEY, token);
+    updateGithubSyncStatus();
+    tokenStatusMsg.className = "modal-alert success";
+    tokenStatusMsg.textContent = "Token saved in browser localStorage!";
+    tokenStatusMsg.style.display = "block";
+    setTimeout(() => {
+      closeGithubModal();
+    }, 1000);
+  });
+
+  clearTokenBtn?.addEventListener("click", () => {
+    localStorage.removeItem(GITHUB_TOKEN_KEY);
+    ghTokenInput.value = "";
+    updateGithubSyncStatus();
+    tokenStatusMsg.className = "modal-alert success";
+    tokenStatusMsg.textContent = "Token removed.";
+    tokenStatusMsg.style.display = "block";
+  });
+
   const eyebrowText = document.getElementById("eyebrow-text") as HTMLParagraphElement;
   const contentTitle = document.getElementById("content-title") as HTMLInputElement;
   const dateValue = document.getElementById("date-value") as HTMLElement;
@@ -988,6 +1265,8 @@ import { siteConfig } from "../data/site";
         if (data.authenticated) {
           state.authenticated = true;
           state.user = data.user;
+          serverHasGithubToken = Boolean(data.hasGithubToken);
+          updateGithubSyncStatus();
           showStudio();
           await loadContentList();
           return true;
@@ -1038,6 +1317,8 @@ import { siteConfig } from "../data/site";
       } else {
         state.authenticated = true;
         state.user = data.user;
+        serverHasGithubToken = Boolean(data.hasGithubToken);
+        updateGithubSyncStatus();
         showStudio();
         await loadContentList();
       }
@@ -1237,6 +1518,15 @@ import { siteConfig } from "../data/site";
     setStatus("saving", "Saving...");
 
     try {
+      const clientToken = getClientGithubToken();
+      const reqHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-Requested-With": "MaenStudio",
+      };
+      if (clientToken) {
+        reqHeaders["X-GitHub-Token"] = clientToken;
+      }
+
       if (state.currentType === "blog") {
         const title = contentTitle.value.trim();
         if (!title) {
@@ -1266,16 +1556,20 @@ import { siteConfig } from "../data/site";
 
         const res = await fetch("/api/content", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Requested-With": "MaenStudio",
-          },
+          headers: reqHeaders,
           body: JSON.stringify(payload),
         });
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.error || "Save failed.");
+          const errMsg = data.error || "Save failed.";
+          if (errMsg.includes("GITHUB_TOKEN") || errMsg.includes("local disk not writable")) {
+            openGithubTokenModal();
+            tokenStatusMsg.className = "modal-alert error";
+            tokenStatusMsg.textContent = "GitHub token required to publish. Please enter your Personal Access Token.";
+            tokenStatusMsg.style.display = "block";
+          }
+          throw new Error(errMsg);
         }
 
         state.isNew = false;
@@ -1303,16 +1597,20 @@ import { siteConfig } from "../data/site";
 
         const res = await fetch("/api/content", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Requested-With": "MaenStudio",
-          },
+          headers: reqHeaders,
           body: JSON.stringify(payload),
         });
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.error || "Save failed.");
+          const errMsg = data.error || "Save failed.";
+          if (errMsg.includes("GITHUB_TOKEN") || errMsg.includes("local disk not writable")) {
+            openGithubTokenModal();
+            tokenStatusMsg.className = "modal-alert error";
+            tokenStatusMsg.textContent = "GitHub token required to publish. Please enter your Personal Access Token.";
+            tokenStatusMsg.style.display = "block";
+          }
+          throw new Error(errMsg);
         }
 
         state.hasUnsavedChanges = false;
